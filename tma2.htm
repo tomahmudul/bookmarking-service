@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>TMA 2 - Learning Management System</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css">
+    <style>
+        body {
+            padding: 20px;
+        }
+        .cover-page {
+            text-align: center;
+            margin-top: 50px;
+        }
+        .content {
+            margin-top: 20px;
+        }
+        .content h2 {
+            margin-top: 30px;
+        }
+    </style>
+</head>
+<body>
+<div class="cover-page">
+    <h1>Assignment 2</h1>
+    <h2>Course Number and Name: COMPXXX - Web Development</h2>
+    <h3>Your Name: John Liu</h3>
+    <h3>Student ID: 123456789</h3>
+    <h3>Date Began: YYYY-MM-DD</h3>
+    <h3>Date Completed: YYYY-MM-DD</h3>
+    <h3>Estimated Hours Spent: 10 hours</h3>
+</div>
+
+<div class="content">
+    <h2>Project Description and Requirements</h2>
+    <p>
+        In this assignment, I developed a small-scale online learning management system (LMS) for delivering online courses to learners. The LMS supports course content management, user registration, lesson viewing, and quizzes. The educational materials are marked up using a custom Educational Markup Language (EML), which is then parsed and displayed as HTML.
+    </p>
+
+    <h2>Analysis and Design</h2>
+    <h3>Requirements</h3>
+    <ul>
+        <li>Develop a custom EML for course content.</li>
+        <li>Store course content in a database.</li>
+        <li>Enable user registration and login.</li>
+        <li>Provide interfaces for lesson viewing and quizzes.</li>
+    </ul>
+    <h3>System Design</h3>
+    <p>
+        The LMS consists of several functional modules:
+    <ul>
+        <li>User Management: Handles user registration and login.</li>
+        <li>Course Management: Stores and retrieves course content from the database.</li>
+        <li>Lesson Viewer: Parses EML content and displays it as HTML.</li>
+        <li>Quiz Module: Displays quizzes and checks answers.</li>
+    </ul>
+    </p>
+    <h3>Data Flow</h3>
+    <p>
+        User interactions with the LMS follow these steps:
+    <ul>
+        <li>User registers and logs in.</li>
+        <li>User selects a lesson to view.</li>
+        <li>Lesson content is fetched from the database, parsed, and displayed.</li>
+        <li>User can take quizzes related to the lessons.</li>
+    </ul>
+    </p>
+    <h3>System Layout</h3>
+    <p>
+        The system layout within the browser's window includes:
+    <ul>
+        <li>Navigation bar with links to Dashboard, Login, Sign Up, and Logout.</li>
+        <li>Content area for displaying lessons and quizzes.</li>
+    </ul>
+    </p>
+
+    <h2>Implementation Documentation</h2>
+    <h3>Custom EML</h3>
+    <p>
+        Example EML for a lesson:
+    <pre>
+<lesson>
+    <content>
+        <p>Welcome to the "Introduction to Data Science" lesson!</p>
+        <p>In this lesson, we will explore the exciting field of data science and its applications.</p>
+        <h2>Topics Covered:</h2>
+        <ul>
+            <li>What is Data Science?</li>
+            <li>Why Data Science is important?</li>
+            <li>Role of Data Scientist</li>
+            <li>Applications of Data Science</li>
+        </ul>
+        <h2>Learning Objectives:</h2>
+        <ol>
+            <li>Understand the concept of Data Science and its interdisciplinary nature.</li>
+            <li>Learn about the importance of data and its role in decision-making.</li>
+            <li>Explore the skills required to become a Data Scientist.</li>
+            <li>Discover real-world applications of Data Science in various industries.</li>
+        </ol>
+        <h2>Prerequisites:</h2>
+        <p>No specific prerequisites are required for this lesson. Basic knowledge of statistics and programming concepts would be beneficial.</p>
+        <h2>Resources:</h2>
+        <ul>
+            <li>Online courses and tutorials on Data Science</li>
+            <li>Books and research papers on Data Science</li>
+            <li>Data Science communities and forums</li>
+        </ul>
+        <p>We hope you enjoy exploring the fascinating world of Data Science with us!</p>
+    </content>
+</lesson>
+            </pre>
+    </p>
+    <h3>Database Design</h3>
+    <p>
+        Database tables:
+    <ul>
+        <li>Users: Stores user information (id, username, password, email).</li>
+        <li>Courses: Stores course information (id, course_name, description).</li>
+        <li>Units: Stores unit information (id, course_id, unit_name, description).</li>
+        <li>Course Contents: Stores lesson and quiz content (id, course_id, unit_id, content_type, title, content).</li>
+    </ul>
+    </p>
+    <h3>Key PHP Scripts</h3>
+    <p>
+        <strong>eml_parser.php:</strong> Contains functions to parse EML content.
+    <pre>
+<?php
+// Function to parse EML content and convert it to HTML
+function parseLessonEML($eml_content) {
+    $xml = simplexml_load_string($eml_content);
+    $html = '';
+
+    if ($xml->getName() === 'lesson') {
+        $content = '';
+        foreach ($xml->content->children() as $child) {
+            $content .= $child->asXML();
+        }
+        $html .= "<div>$content</div>";
+    }
+
+    return $html;
+}
+
+function parseQuizEML($eml_content) {
+    $xml = simplexml_load_string($eml_content);
+    $html = '';
+
+    if ($xml->getName() === 'quiz') {
+        foreach ($xml->question as $question) {
+            $html .= "<p>{$question->text}</p>";
+            foreach ($question->option as $option) {
+                $correct = $option['correct'] == 'true' ? 'correct' : '';
+                $html .= "<p class='$correct'>{$option}</p>";
+            }
+        }
+    }
+
+    return $html;
+}
+?>
+            </pre>
+    <strong>lesson.php:</strong> Displays a lesson based on the lesson ID.
+    <pre>
+<?php
+// Include header
+include 'header.php';
+include 'eml_parser.php';
+
+// Check if lesson ID is provided in the URL
+if (!isset($_GET['id']) || empty($_GET['id'])) {
+    header("Location: dashboard.php");
+    exit();
+}
+
+// Fetch lesson details from the database based on the provided lesson ID
+$lesson_id = intval($_GET['id']);
+$sql = "SELECT * FROM course_contents WHERE id = $lesson_id AND content_type = 'lesson'";
+$result = mysqli_query($conn, $sql);
+
+// Check if lesson exists
+if (mysqli_num_rows($result) == 0) {
+    header("Location: dashboard.php");
+    exit();
+}
+
+// Fetch lesson data
+$lesson = mysqli_fetch_assoc($result);
+
+?>
+
+        <div class="container">
+    <h2><?php echo htmlspecialchars($lesson['title']); ?></h2>
+    <div>
+        <?php echo parseLessonEML($lesson['content']); ?>
+    </div>
+    <div>
+        <a href="quiz.php?lesson_id=<?php echo $lesson_id; ?>" class="btn btn-primary">Take the Quiz</a>
+    </div>
+</div>
+
+        <?php
+include 'footer.php';
+mysqli_close($conn);
+?>
+            </pre>
+    </p>
+
+    <h2>User Guide</h2>
+    <h3>Setting Up the Application</h3>
+    <ol>
+        <li>Clone the repository from GitHub.</li>
+        <li>Create a database and import the provided SQL scripts.</li>
+        <li>Update `db_connection.php` with your database credentials.</li>
+        <li>Deploy the application on a web server.</li>
+    </ol>
+    <h3>Running the Application</h3>
+    <p>
+        Open the application in your web browser and navigate to the homepage. Register a new user account and log in to access the dashboard. Select a lesson to view its content and take the associated quiz.
+    </p>
+
+    <h3>Hyperlink to the Application</h3>
+    <p>
+        <a href="http://your-live-server-url.com">Access the Live Application</a>
+    </p>
+
+    <h2>Additional Comments</h2>
+    <p>
+        This project provided valuable experience in developing a web-based learning management system, including database design, user management, and parsing custom XML content. I look forward to your feedback.
+    </p>
+</div>
+</body>
+</html>
